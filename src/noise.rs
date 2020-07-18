@@ -34,14 +34,15 @@ impl Noise {
             "blue" => Color::Blue,
             "violet" => Color::Violet,
             "grey" | "gray" => Color::Grey,
-            _ => Color::White,
+            _ => return Err("Invalid input."),
         }; 
 
         let interpolation = match interpolation.to_lowercase().trim() {
             "linear" => Interpolation::Linear,
             "polynomial" => Interpolation::Polynomial,
             "spline" => Interpolation::Spline,
-            _ => Interpolation::None,
+            "" => Interpolation::None,
+            _ => return Err("Invalid input."),
         }; 
 
         Ok(Noise {color, interpolation})      
@@ -66,61 +67,14 @@ mod tests {
 
     #[test]
     fn test_new() {
-        // invalid unit
-        assert!(Temperature::new(String::from("32z")).is_err());
-        
-        // invalid input
-        assert!(Temperature::new(String::from("wefigyudgqdt%$34571234723gqwe87")).is_err());
-
-        // out of bounds (below absolute zero)
-        assert!(Temperature::new(String::from("-10000c")).is_err());
-        assert!(Temperature::new(String::from("-10000f")).is_err());
-        assert!(Temperature::new(String::from("-10000k")).is_err());
-
-        // valid input
-        assert!(!Temperature::new(String::from("30c")).is_err());
-        assert!(!Temperature::new(String::from("30f")).is_err());
-        assert!(!Temperature::new(String::from("30k")).is_err());
+        // invalid input returns error
+        assert!(Noise::new("not_an option", "not_an_option").is_err());        
     }
 
     #[test]
-    fn test_convert() -> Result<(), Box<dyn Error>> {
-        let abs_zero_k = Temperature::new(String::from(ABSOLUTE_ZERO_K.to_string() + "k"))?;
-        let abs_zero_f = Temperature::new(String::from(ABSOLUTE_ZERO_F.to_string() + "f"))?;
-        let abs_zero_c = Temperature::new(String::from(ABSOLUTE_ZERO_C.to_string() + "c"))?;
-
-        assert_eq!(abs_zero_f, abs_zero_c.to_fahrenheit());
-        assert_eq!(abs_zero_f, abs_zero_k.to_fahrenheit());
-
-        assert_eq!(abs_zero_c, abs_zero_f.to_celcius());
-        assert_eq!(abs_zero_c, abs_zero_k.to_celcius());
-
-        assert_eq!(abs_zero_k, abs_zero_c.to_kelvin());
-        assert_eq!(abs_zero_k, abs_zero_f.to_kelvin());        
-
+    fn test_populate() -> Result<(), Box<dyn Error>> {
+        // TODO
         Ok(())
     }
 
-    #[test]
-    fn test_to_string() -> Result<(), Box<dyn Error>> {
-        let abs_zero_k = Temperature::new(String::from(ABSOLUTE_ZERO_K.to_string() + "k"))?;
-
-        assert_eq!(abs_zero_k.to_string(), String::from(ABSOLUTE_ZERO_K.to_string() + "k"));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_unit() -> Result<(), Box<dyn Error>> {
-        let abs_zero_k = Temperature::new(String::from(ABSOLUTE_ZERO_K.to_string() + "k"))?;
-        let abs_zero_f = Temperature::new(String::from(ABSOLUTE_ZERO_F.to_string() + "f"))?;
-        let abs_zero_c = Temperature::new(String::from(ABSOLUTE_ZERO_C.to_string() + "c"))?;
-
-        assert_eq!(abs_zero_k.unit(), Unit::Kelvin);
-        assert_eq!(abs_zero_f.unit(), Unit::Fahrenheit);
-        assert_eq!(abs_zero_c.unit(), Unit::Celcius);        
-
-        Ok(())
-
-    }
 }
