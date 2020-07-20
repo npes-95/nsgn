@@ -1,20 +1,8 @@
 extern crate hound;
 
 use std::error::Error;
-use std::fmt;
 
 pub mod noise;
-
-#[derive(Debug)]
-struct NsgnError(String);
-
-impl fmt::Display for NsgnError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "There is an error: {}", self.0)
-    }
-}
-
-impl Error for NsgnError {}
 
 pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
 
