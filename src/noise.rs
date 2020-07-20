@@ -1,6 +1,8 @@
 extern crate rand;
+extern crate rand_distr;
 
-use rand::{distributions::Uniform, Rng};
+use rand::Rng;
+
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum Color {
@@ -20,15 +22,22 @@ enum Interpolation {
     Spline,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum Distribution {
+    Normal,
+    Uniform,
+}
+
 #[derive(Debug)]
 pub struct Noise {
     color: Color,
     interpolation: Interpolation,
+    distribution: Distribution, 
     clip_len: f32,
 }
 
 impl Noise {
-    pub fn new(color: &str, interpolation: &str, clip_len: &str) -> Result<Noise, &'static str> {
+    pub fn new(color: &str, interpolation: &str, distribution: &str, clip_len: &str) -> Result<Noise, &'static str> {
 
         let color = match color.to_lowercase().trim() {
             "white" => Color::White,
@@ -48,21 +57,29 @@ impl Noise {
             "" => Interpolation::None,
             _ => return Err("Invalid input."),
         };
+        let distribution = match distribution.to_lowercase().trim() {
+            "normal" => Distribution::Normal,
+            "uniform" => Distribution::Uniform,
+            "" => Distribution::Uniform,
+            _ => return Err("Invalid input."),
+        };
 
         let clip_len: f32 = match clip_len.trim().parse::<f32>() {
             Ok(n) => n*44100f32,
             Err(_) => return Err("Invalid input."),
         };
 
-        Ok(Noise {color, interpolation, clip_len})      
+        Ok(Noise {color, interpolation, distribution, clip_len})      
     }
 
     pub fn generate(&self) -> Vec<i16> {
 
         let mut rng = rand::thread_rng();
-        let range: Uniform<i16> = Uniform::new(std::i16::MIN, std::i16::MAX);
 
-        (0..self.clip_len as u32).map(|_| rng.sample(&range)).collect()
+        match self.distribution {
+            Distribution::Normal => (0..self.clip_len as u32).map(|_| (((rng.sample::<f32, rand_distr::StandardNormal>(rand_distr::StandardNormal) - 0.5) * 2.0) * std::i16::MAX as f32) as i16).collect(),
+            Distribution::Uniform => (0..self.clip_len as u32).map(|_| rng.sample(rand_distr::Uniform::new(std::i16::MIN, std::i16::MAX))).collect(),
+        }
     }
 }
 
@@ -78,7 +95,7 @@ mod tests {
     #[test]
     fn test_new() {
         // invalid input returns error
-        assert!(Noise::new("not_an option", "not_an_option", "not an option").is_err());        
+        assert!(Noise::new("not_an option", "not_an_option", "not an option", "not an option").is_err());        
     }
 
     #[test]

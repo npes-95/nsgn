@@ -22,6 +22,7 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
     let generator = noise::Noise::new(
         config.value_of("Color").unwrap_or(""), 
         config.value_of("Interpolation").unwrap_or(""),
+        config.value_of("Distribution").unwrap_or(""),
         config.value_of("Length").unwrap_or(""),
     )?;
 
@@ -33,7 +34,7 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
         sample_format: hound::SampleFormat::Int,
     };
 
-    let filename = config.value_of("Output file").unwrap_or("noise.wav");
+    let filename = config.value_of("Output File").unwrap_or("noise.wav");
 
     let mut writer = hound::WavWriter::create(filename, writer_cfg)?;
 
