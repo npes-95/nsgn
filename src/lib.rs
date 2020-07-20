@@ -1,8 +1,20 @@
 extern crate hound;
 
 use std::error::Error;
+use std::fmt;
 
 pub mod noise;
+
+#[derive(Debug)]
+struct NsgnError(String);
+
+impl fmt::Display for NsgnError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "There is an error: {}", self.0)
+    }
+}
+
+impl Error for NsgnError {}
 
 pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
 
@@ -10,6 +22,7 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
     let generator = noise::Noise::new(
         config.value_of("Color").unwrap_or(""), 
         config.value_of("Interpolation").unwrap_or(""),
+        config.value_of("Length").unwrap_or(""),
     )?;
 
     // init file writer
@@ -20,17 +33,16 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
         sample_format: hound::SampleFormat::Int,
     };
 
-    let mut writer = hound::WavWriter::create("filename.wav", writer_cfg)?;
+    let filename = config.value_of("Output file").unwrap_or("noise.wav");
 
-    // create output buffer
-    let mut out_buf: [i16; 2048] = [0; 2048];
+    let mut writer = hound::WavWriter::create(filename, writer_cfg)?;
 
-    // populate with samples
-    generator.populate(&mut out_buf)?;
+    let mut out_buf: Vec<i16> = generator.generate();
+    
 
     // write out to file
-    for sample in out_buf.iter() {
-        writer.write_sample(sample.clone())?;
+    for sample in out_buf.drain(..) {
+        writer.write_sample(sample)?;
     }
 
     writer.finalize()?;
