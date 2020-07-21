@@ -2,6 +2,10 @@ extern crate rand;
 extern crate rand_distr;
 
 use rand::Rng;
+use rustfft::FFTplanner;
+use rustfft::num_complex::Complex;
+use rustfft::num_traits::Zero;
+use rustfft::num_traits::One;
 
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -33,7 +37,7 @@ pub struct Noise {
     color: Color,
     interpolation: Interpolation,
     distribution: Distribution, 
-    clip_len: f32,
+    clip_len: usize,
 }
 
 impl Noise {
@@ -64,27 +68,53 @@ impl Noise {
             _ => return Err("Invalid input."),
         };
 
-        let clip_len: f32 = match clip_len.trim().parse::<f32>() {
-            Ok(n) => n*44100f32,
+        let clip_len = match clip_len.trim().parse::<f32>() {
+            Ok(n) => (n*44100f32) as usize,
             Err(_) => return Err("Invalid input."),
         };
 
         Ok(Noise {color, interpolation, distribution, clip_len})      
     }
 
-    pub fn generate(&self) -> Vec<i16> {
-
+    pub fn generate(&self) -> Vec<f32> {
         let mut rng = rand::thread_rng();
+        let distr = rand_distr::Normal::new(0f32, 1f32);
 
-        match self.distribution {
-            Distribution::Normal => (0..self.clip_len as u32).map(|_| (((rng.sample::<f32, rand_distr::StandardNormal>(rand_distr::StandardNormal) - 0.5) * 2.0) * std::i16::MAX as f32) as i16).collect(),
-            Distribution::Uniform => (0..self.clip_len as u32).map(|_| rng.sample(rand_distr::Uniform::new(std::i16::MIN, std::i16::MAX))).collect(),
+        let alpha = 1f32;
+        let mut output: Vec<Complex<f32>> = vec![Complex::zero(); self.clip_len];
+
+        let mut white_noise: Vec<Complex<f32>> = (0..self.clip_len).map(|_| Complex::new(rng.sample(distr.unwrap()), 0f32)).collect();
+        let mut white_noise_ft: Vec<Complex<f32>> = vec![Complex::zero(); self.clip_len];
+
+        let mut coeffs: Vec<Complex<f32>> = vec![Complex::one(); self.clip_len];
+        let mut coeffs_ft: Vec<Complex<f32>> = vec![Complex::zero(); self.clip_len];
+
+        for i in 1..self.clip_len {
+            coeffs[i] = coeffs[i-1] * (0.5 * alpha + (i as f32 - 1f32))/i as f32;
         }
+
+        let mut planner = FFTplanner::new(false);
+        let fft = planner.plan_fft(self.clip_len);
+        fft.process(&mut coeffs, &mut coeffs_ft);
+        fft.process(&mut white_noise, &mut white_noise_ft);
+
+        
+        for i in 0..self.clip_len {
+            let wn_re = white_noise_ft[i].re;
+            let wn_im = white_noise_ft[i].im;
+
+            white_noise_ft[i].re = wn_re * coeffs_ft[i].re - wn_im * coeffs_ft[i].im;
+            white_noise_ft[i].im = wn_im * coeffs_ft[i].re - wn_re * coeffs_ft[i].im;
+        }
+
+        planner = FFTplanner::new(true);
+        let ifft = planner.plan_fft(self.clip_len);
+        ifft.process(&mut white_noise_ft, &mut output);
+        output.iter().map(|x| x.re).collect()        
     }
 }
 
 impl Noise {
-
 }
 
 #[cfg(test)]

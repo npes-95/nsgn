@@ -11,3 +11,4 @@ clap = {version = "~2.27.0", features = ["yaml"]}
 hound = "3.4.0"
 rand = "0.7"
 rand_distr = "0.2.2"
+rustfft = "3.0.1"
