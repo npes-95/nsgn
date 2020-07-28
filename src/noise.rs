@@ -80,7 +80,15 @@ impl Noise {
         let mut rng = rand::thread_rng();
         let distr = rand_distr::Normal::new(0f32, 1f32);
 
-        let alpha = 1f32;
+        let alpha = match self.color {
+            Color::White => 0f32,
+            Color::Pink => 1f32,
+            Color::Brownian => 2f32,
+            Color::Blue => -1f32,
+            Color::Violet => -2f32,
+            Color::Grey => 0f32,
+        };
+        
         let norm_factor = (self.clip_len as f32).sqrt();
         let mut output: Vec<Complex<f32>> = vec![Complex::zero(); self.clip_len];
 
