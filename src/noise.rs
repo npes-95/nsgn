@@ -81,6 +81,7 @@ impl Noise {
         let distr = rand_distr::Normal::new(0f32, 1f32);
 
         let alpha = 1f32;
+        let norm_factor = (self.clip_len as f32).sqrt();
         let mut output: Vec<Complex<f32>> = vec![Complex::zero(); self.clip_len];
 
         let mut white_noise: Vec<Complex<f32>> = (0..self.clip_len).map(|_| Complex::new(rng.sample(distr.unwrap()), 0f32)).collect();
@@ -98,6 +99,13 @@ impl Noise {
         fft.process(&mut coeffs, &mut coeffs_ft);
         fft.process(&mut white_noise, &mut white_noise_ft);
 
+        for bin in white_noise_ft.iter_mut() {
+            *bin /= norm_factor;
+        }
+
+        for coeff in coeffs_ft.iter_mut() {
+            *coeff /= norm_factor;
+        }
         
         for i in 0..self.clip_len {
             let wn_re = white_noise_ft[i].re;
@@ -110,7 +118,8 @@ impl Noise {
         planner = FFTplanner::new(true);
         let ifft = planner.plan_fft(self.clip_len);
         ifft.process(&mut white_noise_ft, &mut output);
-        output.iter().map(|x| x.re).collect()        
+
+        output.iter().map(|x| x.re / norm_factor).collect()        
     }
 }
 

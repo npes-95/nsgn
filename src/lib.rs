@@ -26,8 +26,7 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
 
     let mut writer = hound::WavWriter::create(filename, writer_cfg)?;
 
-    let mut out_buf: Vec<f32> = generator.generate();
-    
+    let mut out_buf: Vec<f32> = generator.generate();    
 
     // write out to file
     for sample in out_buf.drain(..) {
