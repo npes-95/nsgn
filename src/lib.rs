@@ -17,7 +17,9 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
         _ => 0f32,
     };
     let distr: &str = config.value_of("Distribution").unwrap_or("");
-    let chunk_len: f32 = config.value_of("Length").unwrap_or("1").parse()?;
+
+    let output_len: f32 = config.value_of("Length").unwrap_or("1").parse()?;
+    let chunk_len: usize = (output_len*44100f32).abs() as usize;
 
     // init generator 
     let mut generator = noise::Noise::new(alpha, distr, chunk_len)?;
@@ -34,6 +36,7 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
 
     let mut writer = hound::WavWriter::create(filename, writer_cfg)?;
 
+    // get noise
     let mut out_buf: Vec<f32> = generator.generate_chunk();    
 
     // write out to file

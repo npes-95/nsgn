@@ -14,6 +14,11 @@ enum Distribution {
     Uniform,
 }
 
+/// Noise generator.
+///
+/// Uses 1/f^alpha method to produce different colours of noise.
+/// See https://ieeexplore.ieee.org/document/381848 for more details.
+/// 
 pub struct Noise {
     alpha: f32,
     distr: Distribution, 
@@ -24,8 +29,10 @@ pub struct Noise {
 }
 
 impl Noise {
-    pub fn new(alpha: f32, distribution: &str, chunk_len: f32) -> Result<Noise, &'static str> {
-
+    /// Construct a new Noise generator with the given alpha. distribution and
+    /// chunk length.
+    pub fn new(alpha: f32, distribution: &str, chunk_len: usize) -> Result<Noise, &'static str> {
+        // verify input
         if alpha < -2f32 || alpha > 2f32 {
             return Err("Invalid input (alpha).")
         }
@@ -37,8 +44,11 @@ impl Noise {
             _ => return Err("Invalid input (distribution)."),
         };
 
-        let chunk_len = (chunk_len*44100f32).abs() as usize;
+        if chunk_len == 0 {
+            return Err("Invalid input (chunk length).")
+        }
 
+        // create rng and fft objects
         let rng = rand::thread_rng();
 
         let mut planner = FFTplanner::new(false);
@@ -50,12 +60,15 @@ impl Noise {
         Ok(Noise {alpha, distr, chunk_len, rng, fft, ifft})      
     }
 
-    pub fn generate_chunk(&mut self) -> Vec<f32> {
+    /// Generates a noise vector of the given chunk size and returns it.
+    pub fn generate_chunk(&mut self) -> Vec<f32> {        
+        // noise source distribution (mean 0, deviation 1)
+        let distr = rand_distr::Normal::new(0f32,1f32).unwrap();
         
-        let distr = rand_distr::Normal::new(0f32, 1f32).unwrap();
-        
+        // FFT normalisation factor
         let norm_factor = (self.chunk_len as f32).sqrt();
 
+        // vector initialisation
         let mut output: Vec<Complex<f32>> = vec![Complex::zero(); self.chunk_len];
 
         let mut white_noise: Vec<Complex<f32>> = (0..self.chunk_len).map(|_| Complex::new(self.rng.sample(distr), 0f32)).collect();
@@ -64,13 +77,16 @@ impl Noise {
         let mut coeffs: Vec<Complex<f32>> = vec![Complex::one(); self.chunk_len];
         let mut coeffs_ft: Vec<Complex<f32>> = vec![Complex::zero(); self.chunk_len];
 
+        // calculate coefficients
         for i in 1..self.chunk_len {
             coeffs[i] = coeffs[i-1] * (0.5 * self.alpha + (i as f32 - 1f32))/i as f32;
         }
 
+        // take FFT of white noise and coeffs
         self.fft.process(&mut coeffs, &mut coeffs_ft);
         self.fft.process(&mut white_noise, &mut white_noise_ft);
 
+        // normalise result
         for bin in white_noise_ft.iter_mut() {
             *bin /= norm_factor;
         }
@@ -79,6 +95,7 @@ impl Noise {
             *coeff /= norm_factor;
         }
         
+        // product of white noise and coeffs
         for i in 0..self.chunk_len {
             let wn_re = white_noise_ft[i].re;
             let wn_im = white_noise_ft[i].im;
@@ -87,13 +104,12 @@ impl Noise {
             white_noise_ft[i].im = wn_im * coeffs_ft[i].re - wn_re * coeffs_ft[i].im;
         }
 
+        // take inverse FFT of the result
         self.ifft.process(&mut white_noise_ft, &mut output);
 
+        // return real part of the output
         output.iter().map(|x| x.re / norm_factor).collect()        
     }
-}
-
-impl Noise {
 }
 
 #[cfg(test)]
@@ -104,7 +120,7 @@ mod tests {
     #[test]
     fn test_new() {
         // invalid input returns error
-        assert!(Noise::new(-2.5, "not_an_option", -3.0).is_err());        
+        assert!(Noise::new(-2.5, "not_an_option", 0).is_err());        
     }
 
     #[test]
