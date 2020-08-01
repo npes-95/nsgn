@@ -17,6 +17,13 @@ enum Distribution {
 /// Noise generator.
 ///
 /// Uses 1/f^alpha method to produce different colours of noise.
+/// 
+/// Jeremy Kasdin,
+/// Discrete Simulation of Colored Noise and Stochastic Processes
+/// and 1/f^a Power Law Noise Generation,
+/// Proceedings of the IEEE,
+/// Volume 83, Number 5, 1995, pages 802-827.
+/// 
 /// See https://ieeexplore.ieee.org/document/381848 for more details.
 /// 
 pub struct Noise {

@@ -8,11 +8,6 @@ args:
         long: color
         takes_value: true
         help: "Noise color white, pink, brownian, blue, violet, grey."
-    - Interpolation:
-        short: i
-        long: interpolation
-        takes_value: true
-        help: "Interpolation type: linear, polynomial, spline."
     - Length:
         short: l
         long: length
@@ -28,9 +23,14 @@ args:
         short: s
         long: sample-rate
         takes_value: true
-        help: "Sample rate: 16k, 44.1k, 48k."
+        help: "Sample rate: 16000, 44100, 48000"
     - Distribution:
         short: d
         long: distribution
         takes_value: true
         help: "Noise value distribution: normal, uniform."
+    - Alpha:
+        short: a
+        long: Alpha
+        takes_value: true
+        help: "Alpha value such that 1/f^alpha (-2f32 <= alpha <= 2f32)."
