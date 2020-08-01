@@ -12,7 +12,6 @@ args:
         short: l
         long: length
         takes_value: true
-        required: false
         help: "Length of generated audio in seconds."
     - Output File:
         short: o

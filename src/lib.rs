@@ -7,7 +7,7 @@ pub mod noise;
 pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
 
     // parse user input
-    let sample_rate = match config.value_of("Sample Rate").unwrap() {
+    let sample_rate = match config.value_of("Sample Rate").unwrap_or("") {
         "16000" => 16000,
         "44100" => 44100,
         "48000" => 48000,
@@ -34,7 +34,7 @@ pub fn run(config: clap::ArgMatches) -> Result<(), Box<dyn Error>> {
     let chunk_len: usize = (output_len * sample_rate as f32).abs() as usize;
 
     let filename = config.value_of("Output File").unwrap_or("noise.wav");
-    
+
 
     // init generator 
     let mut generator = noise::Noise::new(alpha, distr, chunk_len)?;
